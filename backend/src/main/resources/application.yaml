@@ -1,0 +1,101 @@
+server:
+  port: ${SERVER_PORT:8080}
+
+spring:
+  application:
+    name: inventory-audit-portal
+  datasource:
+    url: ${DATABASE_URL:jdbc:postgresql://localhost:5432/invdb}
+    username: ${DATABASE_USERNAME:invuser}
+    password: ${DATABASE_PASSWORD:invpass}
+    driver-class-name: org.postgresql.Driver
+    hikari:
+      maximum-pool-size: ${HIKARI_MAX_POOL_SIZE:20}
+      minimum-idle: ${HIKARI_MIN_IDLE:5}
+      connection-timeout: ${HIKARI_CONNECTION_TIMEOUT:30000}
+      idle-timeout: ${HIKARI_IDLE_TIMEOUT:600000}
+      max-lifetime: ${HIKARI_MAX_LIFETIME:1800000}
+  jpa:
+    hibernate:
+      ddl-auto: ${DDL_AUTO:update}
+    properties:
+      hibernate:
+        jdbc:
+          batch_size: 50
+        order_inserts: true
+        order_updates: true
+        jdbc.batch_versioned_data: true
+    show-sql: ${SHOW_SQL:false}
+  flyway:
+    enabled: ${FLYWAY_ENABLED:true}
+    locations: classpath:db/migration
+    baseline-on-migrate: true
+    validate-on-migrate: true
+  mail:
+    host: ${SMTP_HOST:smtp.gmail.com}
+    port: ${SMTP_PORT:587}
+    username: ${SMTP_USERNAME:}
+    password: ${SMTP_PASSWORD:}
+    properties:
+      mail:
+        smtp:
+          auth: ${SMTP_AUTH:true}
+          starttls:
+            enable: ${SMTP_STARTTLS:true}
+            required: ${SMTP_STARTTLS_REQUIRED:true}
+
+management:
+  endpoints:
+    web:
+      exposure:
+        include: health,info,metrics
+  endpoint:
+    health:
+      show-details: ${HEALTH_SHOW_DETAILS:when-authorized}
+  health:
+    db:
+      enabled: true
+
+springdoc:
+  api-docs:
+    path: /api-docs
+  swagger-ui:
+    path: /swagger-ui.html
+    enabled: ${SWAGGER_ENABLED:true}
+
+cors:
+  allowed:
+    origins: ${CORS_ALLOWED_ORIGINS:http://localhost:*}
+
+security:
+  csrf:
+    enabled: ${CSRF_ENABLED:false}
+
+jwt:
+  secret: ${JWT_SECRET:defaultSecretKeyThatShouldBeChangedInProductionEnvironmentMinimum32Characters}
+  expiration: ${JWT_EXPIRATION:86400000}
+
+email:
+  enabled: ${EMAIL_ENABLED:false}
+  from: ${EMAIL_FROM:noreply@inventory-audit-portal.com}
+
+app:
+  frontend-url: ${FRONTEND_URL:http://localhost:5173}
+  password-reset-token-expiration-hours: ${PASSWORD_RESET_TOKEN_EXPIRATION_HOURS:1}
+  admin:
+    email: ${ADMIN_EMAIL:vtiradoegas@gmail.com}
+    username: ${ADMIN_USERNAME:vtiradoegas}
+    password: ${ADMIN_PASSWORD:walmart2002!}
+    enabled: ${ADMIN_ENABLED:true}
+
+logging:
+  level:
+    root: ${LOG_LEVEL:INFO}
+    com.inventory.audit: ${LOG_LEVEL:INFO}
+  pattern:
+    console: "%d{yyyy-MM-dd HH:mm:ss} - %msg%n"
+    file: "%d{yyyy-MM-dd HH:mm:ss} [%thread] %-5level %logger{36} - %msg%n"
+  file:
+    name: ${LOG_FILE:logs/inventory-audit-portal.log}
+    max-size: 10MB
+    max-history: 30
