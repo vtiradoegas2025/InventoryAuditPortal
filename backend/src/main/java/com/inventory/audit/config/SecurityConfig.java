@@ -34,7 +34,7 @@ import java.util.List;
 public class SecurityConfig 
 {
 
-    @Value("${cors.allowed.origins:http://localhost:*}")
+    @Value("${cors.allowed.origins:http://localhost:3000,http://localhost:5173}")
     private String allowedOrigins;
 
     @Value("${security.csrf.enabled:false}")
@@ -43,25 +43,29 @@ public class SecurityConfig
     @Autowired
     private JwtAuthenticationFilter jwtAuthenticationFilter;
 
+    /* This method configures the password encoder. */
     @Bean
-    public PasswordEncoder passwordEncoder() {
+    public PasswordEncoder passwordEncoder() 
+    {
         return new BCryptPasswordEncoder();
     }
 
+    /* This method configures the authentication manager. */
     @Bean
-    public AuthenticationManager authenticationManager(AuthenticationConfiguration authConfig) throws Exception {
+    public AuthenticationManager authenticationManager(AuthenticationConfiguration authConfig) throws Exception 
+    {
         return authConfig.getAuthenticationManager();
     }
 
+    /* This method configures the security filter chain. */
     @Bean
     public SecurityFilterChain securityFilterChain(HttpSecurity http) throws Exception 
     {
         http
             .cors(cors -> cors.configurationSource(corsConfigurationSource()))
-            .csrf(csrf -> {
-                if (!csrfEnabled) {
-                    csrf.disable();
-                }
+            .csrf(csrf -> 
+            {
+                if (!csrfEnabled) {csrf.disable();}
             })
             .sessionManagement(session -> session.sessionCreationPolicy(SessionCreationPolicy.STATELESS))
             .addFilterBefore(jwtAuthenticationFilter, UsernamePasswordAuthenticationFilter.class)

@@ -4,24 +4,37 @@
 ._*
 .Spotlight-V100
 .Trashes
+Thumbs.db
+ehthumbs.db
 
 # IDE
 .idea/
 .vscode/
 *.swp
 *.swo
+*~
+*.iml
+*.iws
+*.ipr
 
 # Logs
 *.log
+logs/
+**/logs/
+
+# Test results and coverage
+test-results-*.log
+coverage/
+.nyc_output/
+*.lcov
+**/test-results-*.log
+**/coverage/
 
 # Temporary files
 *.tmp
 *.temp
-
-# Node modules (frontend)
-node_modules/
-dist/
-build/
+*.bak
+*.backup
 
 # Environment files
 .env
@@ -30,11 +43,31 @@ build/
 .env.production
 .env.development
 
-# Logs
-logs/
-*.log
+# Build outputs
+target/
+dist/
+build/
+node_modules/
+
+# Maven
+.mvn/wrapper/maven-wrapper.jar
+.mvn/timing.properties
+pom.xml.tag
+pom.xml.releaseBackup
+pom.xml.versionsBackup
+pom.xml.next
+release.properties
+dependency-reduced-pom.xml
+buildNumber.properties
 
 # Database
 *.db
 *.sqlite
 
+# Docker
+docker-compose.override.yml
+
+# Spring Boot
+application-local.yaml
+application-dev.yaml
+# Note: application-prod.yaml is kept in repo as template

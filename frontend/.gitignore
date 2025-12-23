@@ -6,11 +6,18 @@ yarn-debug.log*
 yarn-error.log*
 pnpm-debug.log*
 lerna-debug.log*
+test-results-*.log
 
+# Dependencies
 node_modules
 dist
 dist-ssr
 *.local
+
+# Coverage
+coverage/
+.nyc_output/
+*.lcov
 
 # Editor directories and files
 .vscode/*

@@ -44,3 +44,5 @@ application-local.yaml
 application-dev.yaml
 # Note: application-prod.yaml is kept in repo as template
 
+# Test results
+test-results-*.log

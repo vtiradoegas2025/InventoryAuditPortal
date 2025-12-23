@@ -15,3 +15,4 @@ CREATE INDEX IF NOT EXISTS idx_user_id ON audit_events(user_id);
 CREATE INDEX IF NOT EXISTS idx_timestamp ON audit_events(timestamp);
 CREATE INDEX IF NOT EXISTS idx_event_type ON audit_events(event_type);
 
+

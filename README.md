@@ -7,13 +7,11 @@ A full-stack inventory management system with comprehensive audit logging, built
 - [Features](#features)
 - [Technology Stack](#technology-stack)
 - [Quick Start](#quick-start)
-- [Development Setup](#development-setup)
-- [API Documentation](#api-documentation)
 - [Architecture Overview](#architecture-overview)
-- [Performance Optimizations](#performance-optimizations)
-- [Production Deployment](#production-deployment)
-- [Configuration](#configuration)
+- [Design Decisions](#design-decisions)
 - [Project Structure](#project-structure)
+- [Testing](#testing)
+- [Documentation](#documentation)
 - [Author](#author)
 
 ## Features
@@ -56,6 +54,9 @@ A full-stack inventory management system with comprehensive audit logging, built
 
 ### Docker Deployment (Recommended)
 
+**Important:** The database password defaults to `invpass` in both `docker-compose.prod.yaml` and `application.yaml`. 
+If you set `DATABASE_PASSWORD` environment variable, ensure it matches in both places. For production, use a `.env` file.
+
 The easiest way to get started:
 
 ```bash
@@ -63,12 +64,20 @@ The easiest way to get started:
 git clone <repository-url>
 cd inventory-audit-portal
 
-# Create .env file (optional - defaults provided)
-# See Configuration section for details
+# Optional: Copy and customize environment variables
+cp .env.example .env
+# Edit .env if you want different passwords/ports/configuration
+# See .env.example for all available configuration options
 
 # Start all services
 docker-compose -f docker-compose.prod.yaml up -d
 ```
+
+**For Production Deployment:**
+- Copy `.env.example` to `.env` and configure all production values
+- Ensure `DATABASE_PASSWORD` matches in both docker-compose and application config
+- Set `SWAGGER_ENABLED=false`, `DEMO_MODE=false`, and use strong secrets
+- See [docs/DEPLOYMENT.md](docs/DEPLOYMENT.md) for detailed production setup
 
 This will start:
 - PostgreSQL database (port 5432)
@@ -81,364 +90,12 @@ Access the application:
 - Swagger UI: `http://localhost:8080/swagger-ui.html`
 - Health Check: `http://localhost:8080/actuator/health`
 
-**Default Login Credentials:**
-- Username: `vtiradoegas`
-- Password: `walmart2002!`
-- Email: `vtiradoegas@gmail.com`
-
-## Development Setup
-
-### 1. Start Database
-
-```bash
-cd db
-docker-compose up -d
-```
-
-This starts PostgreSQL on port 5432 with:
-- Database: `invdb`
-- Username: `invuser`
-- Password: `invpass`
-
-### 2. Start Backend
-
-```bash
-cd backend
-./mvnw spring-boot:run
-```
-
-Backend will be available at `http://localhost:8080`
-
-### 3. Start Frontend
-
-```bash
-cd frontend
-npm install
-npm run dev
-```
-
-Frontend will be available at `http://localhost:5173`
-
-### Running Tests
-
-**Backend:**
-```bash
-cd backend
-./mvnw test
-```
-
-**Backend Test Script:**
-```bash
-cd backend
-./test-backend.sh
-```
-
-### Database Migrations
-
-Migrations are handled automatically by Flyway. To create a new migration:
-
-1. Create a file: `backend/src/main/resources/db/migration/V5__Your_migration_name.sql`
-2. Flyway will run it automatically on next startup
-
-## API Documentation
-
-### Swagger UI
-
-Once the backend is running, access Swagger UI at:
-- `http://localhost:8080/swagger-ui.html`
-- API Docs: `http://localhost:8080/api-docs`
-
-### Health Checks
-
-- Health: `http://localhost:8080/actuator/health`
-- Info: `http://localhost:8080/actuator/info`
-- Metrics: `http://localhost:8080/actuator/metrics`
-
-### Inventory Item Endpoints
-
-Base URL: `/api/inventory`
-
-#### List All Items
-```
-GET /api/inventory
-```
-Returns paginated list of all inventory items.
-
-**Query Parameters:**
-- `page` (default: 0) - Page number (0-indexed)
-- `size` (default: 50) - Page size (max: 1000)
-- `sortBy` (default: "updatedAt") - Sort field: id, sku, name, qty, location, updatedAt
-- `sortDir` (default: "DESC") - Sort direction: ASC or DESC
-
-**Response:** `Page<InventoryItem>`
-
-#### Get Item by ID
-```
-GET /api/inventory/{id}
-```
-Returns a single inventory item by its ID.
-
-**Path Parameters:**
-- `id` - Item ID (Long)
-
-**Response:** `InventoryItem`
-
-#### Get Item by SKU
-```
-GET /api/inventory/sku/{sku}
-```
-Returns a single inventory item by its unique SKU.
-
-**Path Parameters:**
-- `sku` - Stock Keeping Unit (String)
-
-**Response:** `InventoryItem`
-
-#### Get Items by Location
-```
-GET /api/inventory/location/{location}
-```
-Returns paginated list of items filtered by location.
-
-**Path Parameters:**
-- `location` - Location identifier (String)
-
-**Query Parameters:** Same as List All Items
-
-**Response:** `Page<InventoryItem>`
-
-#### Search by SKU Pattern
-```
-GET /api/inventory/search/sku?pattern={pattern}
-```
-Performs case-insensitive partial match search on SKU field.
-
-**Query Parameters:**
-- `pattern` (required) - Search pattern (String)
-- `page` (default: 0)
-- `size` (default: 50)
-
-**Response:** `Page<InventoryItem>`
-
-#### Search by Name Pattern
-```
-GET /api/inventory/search/name?pattern={pattern}
-```
-Performs case-insensitive partial match search on name field.
-
-**Query Parameters:** Same as Search by SKU Pattern
-
-**Response:** `Page<InventoryItem>`
-
-#### Get Location Summary
-```
-GET /api/inventory/summary/location
-```
-Returns aggregated statistics grouped by location.
-
-**Response:** `List<Object[]>` where each array contains [location, count, totalQty]
-
-#### Create Item
-```
-POST /api/inventory
-```
-Creates a new inventory item.
-
-**Request Body:**
-```json
-{
-  "sku": "string (required, unique)",
-  "name": "string (required)",
-  "qty": "integer (required, min: 0)",
-  "location": "string (required)"
-}
-```
-
-**Response:** `InventoryItem` (201 Created)
-
-#### Create Items Batch
-```
-POST /api/inventory/batch
-```
-Creates multiple inventory items in a single transaction.
-
-**Request Body:** `List<InventoryItemRequest>`
-
-**Response:** `List<InventoryItem>` (201 Created)
-
-#### Update Item
-```
-PUT /api/inventory/{id}
-```
-Updates an existing inventory item.
-
-**Path Parameters:**
-- `id` - Item ID (Long)
-
-**Request Body:** Same as Create Item
-
-**Response:** `InventoryItem`
-
-#### Delete Item
-```
-DELETE /api/inventory/{id}
-```
-Deletes an inventory item by ID.
-
-**Path Parameters:**
-- `id` - Item ID (Long)
-
-**Response:** 204 No Content
-
-### Audit Event Endpoints
-
-Base URL: `/api/audit-events`
-
-#### List All Audit Events
-```
-GET /api/audit-events
-```
-Returns paginated list of all audit events.
-
-**Query Parameters:**
-- `page` (default: 0)
-- `size` (default: 50)
-- `sortBy` (default: "timestamp") - Sort field: id, eventType, entityType, entityId, userId, timestamp
-- `sortDir` (default: "DESC") - Sort direction: ASC or DESC
-
-**Response:** `Page<AuditEvent>`
-
-#### Get Audit Event by ID
-```
-GET /api/audit-events/{id}
-```
-Returns a single audit event by ID.
-
-**Path Parameters:**
-- `id` - Event ID (Long)
-
-**Response:** `AuditEvent`
-
-#### Get Events by Entity
-```
-GET /api/audit-events/entity/{entityType}/{entityId}
-```
-Returns paginated audit events for a specific entity.
-
-**Path Parameters:**
-- `entityType` - Entity type (String)
-- `entityId` - Entity ID (Long)
-
-**Query Parameters:** Same as List All Audit Events
-
-**Response:** `Page<AuditEvent>`
-
-#### Get Events by Entity Type
-```
-GET /api/audit-events/entity-type/{entityType}
-```
-Returns paginated audit events filtered by entity type.
-
-**Path Parameters:**
-- `entityType` - Entity type (String)
-
-**Query Parameters:** Same as List All Audit Events
-
-**Response:** `Page<AuditEvent>`
-
-#### Get Events by Event Type
-```
-GET /api/audit-events/event-type/{eventType}
-```
-Returns paginated audit events filtered by event type (CREATE, UPDATE, DELETE, READ).
-
-**Path Parameters:**
-- `eventType` - Event type (String)
-
-**Query Parameters:** Same as List All Audit Events
-
-**Response:** `Page<AuditEvent>`
-
-#### Get Events by User ID
-```
-GET /api/audit-events/user/{userId}
-```
-Returns paginated audit events filtered by user ID.
-
-**Path Parameters:**
-- `userId` - User identifier (String)
-
-**Query Parameters:** Same as List All Audit Events
-
-**Response:** `Page<AuditEvent>`
-
-### User Authentication Endpoints
-
-Base URL: `/api/auth`
-
-#### Register
-```
-POST /api/auth/register
-```
-Creates a new user account.
-
-**Request Body:**
-```json
-{
-  "username": "string (required)",
-  "email": "string (required, email format)",
-  "password": "string (required, min: 8)"
-}
-```
-
-**Response:** `AuthResponse` (201 Created)
-
-#### Login
-```
-POST /api/auth/login
-```
-Authenticates a user and returns a JWT token.
-
-**Request Body:**
-```json
-{
-  "username": "string (required)",
-  "password": "string (required)"
-}
-```
-
-**Response:** `AuthResponse` with JWT token
-
-#### Forgot Password
-```
-POST /api/auth/forgot-password
-```
-Sends a password reset email (or logs reset URL if email disabled).
-
-**Request Body:**
-```json
-{
-  "email": "string (required, email format)"
-}
-```
-
-**Response:** 200 OK
-
-#### Reset Password
-```
-POST /api/auth/reset-password
-```
-Resets password using a reset token.
-
-**Request Body:**
-```json
-{
-  "token": "string (required)",
-  "newPassword": "string (required, min: 8)"
-}
-```
-
-**Response:** 200 OK
+**Demo / Local Credentials (For local testing only. Not production-safe.):**
+- Username: `admin`
+- Password: `admin123!`
+- Email: `admin@example.com`
+
+⚠️ **Security Note**: See [SECURITY.md](SECURITY.md) for important security information.
 
 ## Architecture Overview
 
@@ -488,9 +145,85 @@ CREATE INDEX idx_timestamp ON audit_events(timestamp);
 CREATE INDEX idx_event_type ON audit_events(event_type);
 ```
 
-## Performance Optimizations
+## Design Decisions
 
-### Database Indexing Strategy
+### Backend Design Choices
+
+#### 1. Layered Architecture
+- **Rationale**: Separation of concerns, testability, and maintainability
+- **Implementation**: Clear separation between Controllers, Services, Repositories, and Entities
+- **Benefits**: Easy to test individual layers, clear responsibility boundaries
+
+#### 2. JWT-Based Authentication
+- **Rationale**: Stateless authentication suitable for REST APIs
+- **Implementation**: Spring Security with JWT tokens, 24-hour expiration
+- **Benefits**: Scalable, no server-side session storage needed
+
+#### 3. Automatic Audit Logging
+- **Rationale**: Compliance and accountability requirements
+- **Implementation**: Service layer automatically creates audit events for all mutations
+- **Benefits**: Complete change history without manual intervention
+
+#### 4. Caffeine Cache
+- **Rationale**: Reduce database load for frequently accessed items
+- **Implementation**: Cache by ID and SKU with 30-minute TTL
+- **Benefits**: Improved response times for read operations
+
+#### 5. Flyway Migrations
+- **Rationale**: Version-controlled database schema changes
+- **Implementation**: SQL migration files in `db/migration/`
+- **Benefits**: Reproducible deployments, schema versioning
+
+#### 6. Pagination
+- **Rationale**: Handle large datasets efficiently
+- **Implementation**: Spring Data JPA Pageable with configurable page size (max 1000)
+- **Benefits**: Memory-efficient, better user experience
+
+#### 7. Input Validation
+- **Rationale**: Data integrity and security
+- **Implementation**: Jakarta Validation annotations on request DTOs
+- **Benefits**: Prevents invalid data from entering the system
+
+### Frontend Design Choices
+
+#### 1. Component-Based Architecture
+- **Rationale**: Reusability and maintainability
+- **Implementation**: React functional components with hooks
+- **Benefits**: Modular code, easier testing, better code organization
+
+#### 2. Context API for State Management
+- **Rationale**: Simple state management for authentication without external dependencies
+- **Implementation**: AuthContext for user authentication state
+- **Benefits**: Lightweight, no additional libraries needed
+
+#### 3. Protected Routes
+- **Rationale**: Secure access to authenticated pages
+- **Implementation**: ProtectedRoute component wrapping authenticated routes
+- **Benefits**: Centralized authentication checks
+
+#### 4. Role-Based UI Rendering
+- **Rationale**: Different user experiences based on permissions
+- **Implementation**: RoleGuard component for conditional rendering
+- **Benefits**: Clean separation of admin/user features
+
+#### 5. Tailwind CSS
+- **Rationale**: Rapid UI development with utility classes
+- **Implementation**: Utility-first CSS framework
+- **Benefits**: Fast development, consistent design, small bundle size
+
+#### 6. Vite Build Tool
+- **Rationale**: Fast development experience and optimized builds
+- **Implementation**: Vite for development and production builds
+- **Benefits**: Hot module replacement, fast builds
+
+#### 7. API Service Layer
+- **Rationale**: Centralized API communication logic
+- **Implementation**: `services/api.js` with fetch-based HTTP client
+- **Benefits**: Reusable API calls, centralized error handling
+
+### Performance Optimizations
+
+#### Database Indexing Strategy
 
 **InventoryItem Table:**
 - `idx_sku`: Unique index on SKU for O(log n) lookups
@@ -504,7 +237,7 @@ CREATE INDEX idx_event_type ON audit_events(event_type);
 - `idx_timestamp`: Index on timestamp for chronological queries
 - `idx_event_type`: Index on eventType for filtering by operation type
 
-### Caching Strategy
+#### Caching Strategy
 
 **Caffeine Cache Configuration:**
 - Maximum size: 10,000 entries
@@ -520,7 +253,7 @@ CREATE INDEX idx_event_type ON audit_events(event_type);
 - All cache entries are invalidated on CREATE, UPDATE, DELETE operations
 - Ensures data consistency at the cost of cache efficiency
 
-### Connection Pooling
+#### Connection Pooling
 
 **HikariCP Configuration:**
 - Maximum pool size: 20 connections
@@ -529,7 +262,7 @@ CREATE INDEX idx_event_type ON audit_events(event_type);
 - Idle timeout: 10 minutes
 - Max lifetime: 30 minutes
 
-### JPA Batch Processing
+#### JPA Batch Processing
 
 **Hibernate Batch Settings:**
 - Batch size: 50 operations per batch
@@ -538,287 +271,6 @@ CREATE INDEX idx_event_type ON audit_events(event_type);
 - Batch versioned data: Enabled
 
 These settings optimize batch operations by reducing database round trips.
-
-## Production Deployment
-
-### Docker Deployment
-
-The easiest way to deploy is using Docker Compose:
-
-```bash
-docker-compose -f docker-compose.prod.yaml up -d
-```
-
-### Environment Configuration
-
-Create a `.env` file in the project root:
-
-```bash
-# Database
-DATABASE_NAME=invdb
-DATABASE_USERNAME=invuser
-DATABASE_PASSWORD=your-secure-password-here
-
-# Backend
-BACKEND_PORT=8080
-CORS_ALLOWED_ORIGINS=https://yourdomain.com,https://www.yourdomain.com
-
-# Frontend
-FRONTEND_PORT=80
-VITE_API_BASE_URL=https://api.yourdomain.com/api
-
-# Database Port (if exposing)
-DB_PORT=5432
-```
-
-### Manual Deployment
-
-#### Backend
-
-1. **Build the application:**
-   ```bash
-   cd backend
-   ./mvnw clean package -DskipTests
-   ```
-
-2. **Set environment variables:**
-   ```bash
-   export DATABASE_URL=jdbc:postgresql://your-db-host:5432/invdb
-   export DATABASE_USERNAME=invuser
-   export DATABASE_PASSWORD=your-password
-   export SPRING_PROFILES_ACTIVE=prod
-   export CORS_ALLOWED_ORIGINS=https://yourdomain.com
-   export SWAGGER_ENABLED=false
-   export DDL_AUTO=validate
-   ```
-
-3. **Run the application:**
-   ```bash
-   java -jar target/inventory-audit-portal-0.0.1-SNAPSHOT.jar
-   ```
-
-#### Frontend
-
-1. **Build the application:**
-   ```bash
-   cd frontend
-   npm install
-   npm run build
-   ```
-
-2. **Configure API URL:**
-   Create `.env.production`:
-   ```bash
-   VITE_API_BASE_URL=https://api.yourdomain.com/api
-   ```
-
-3. **Serve the application:**
-   - Copy `dist/` contents to your web server
-   - Configure nginx/Apache to serve the files
-   - Or use the provided Dockerfile
-
-### Production Checklist
-
-#### Security
-- [ ] Change default database passwords
-- [ ] Configure HTTPS/TLS certificates
-- [ ] Set `CSRF_ENABLED=true` if using session auth
-- [ ] Restrict CORS origins to your domain only
-- [ ] Disable Swagger UI (`SWAGGER_ENABLED=false`)
-- [ ] Review and restrict actuator endpoints
-- [ ] Set up firewall rules
-- [ ] Enable rate limiting (consider adding Spring Cloud Gateway)
-
-#### Database
-- [ ] Set `DDL_AUTO=validate` (prevents auto schema changes)
-- [ ] Enable Flyway migrations (`FLYWAY_ENABLED=true`)
-- [ ] Set up automated database backups
-- [ ] Configure connection pooling appropriately
-- [ ] Monitor database performance
-
-#### Monitoring & Logging
-- [ ] Configure log rotation
-- [ ] Set up log aggregation (ELK, CloudWatch, etc.)
-- [ ] Configure health check monitoring
-- [ ] Set up alerts for errors
-- [ ] Monitor application metrics
-- [ ] Set up APM (Application Performance Monitoring)
-
-#### Infrastructure
-- [ ] Set up load balancing (if multiple instances)
-- [ ] Configure auto-scaling
-- [ ] Set up CI/CD pipeline
-- [ ] Configure environment-specific configs
-- [ ] Set up SSL certificates
-- [ ] Configure DNS
-
-#### Application
-- [ ] Test all API endpoints
-- [ ] Verify audit logging works
-- [ ] Test search and filtering
-- [ ] Verify pagination
-- [ ] Test error handling
-- [ ] Load testing
-
-### Backup & Recovery
-
-#### Database Backup
-
-```bash
-# Using pg_dump
-pg_dump -h localhost -U invuser -d invdb > backup.sql
-
-# Restore
-psql -h localhost -U invuser -d invdb < backup.sql
-```
-
-#### Automated Backups
-
-Set up a cron job or use your cloud provider's backup service:
-
-```bash
-# Daily backup at 2 AM
-0 2 * * * pg_dump -h localhost -U invuser -d invdb > /backups/invdb_$(date +\%Y\%m\%d).sql
-```
-
-### Scaling
-
-#### Horizontal Scaling
-
-1. Run multiple backend instances behind a load balancer
-2. Use sticky sessions if needed
-3. Ensure shared database
-4. Configure session replication (if using sessions)
-
-#### Database Scaling
-
-- Consider read replicas for read-heavy workloads
-- Use connection pooling effectively
-- Monitor query performance
-- Consider database sharding for very large datasets
-
-## Configuration
-
-### Email Configuration
-
-The application supports password reset emails via SMTP. For proof of concept, email is disabled by default and reset URLs are logged to the console.
-
-#### Development (Email Disabled)
-
-By default, email is disabled. When a user requests a password reset:
-- The reset URL is logged to the backend console
-- Copy the URL from the logs to reset the password
-- No SMTP configuration needed
-
-#### Production Email Setup
-
-To enable email in production, configure SMTP settings:
-
-**Environment Variables:**
-```bash
-EMAIL_ENABLED=true
-SMTP_HOST=smtp.gmail.com          # or your SMTP provider
-SMTP_PORT=587
-SMTP_USERNAME=your-email@gmail.com
-SMTP_PASSWORD=your-app-password   # Use App Password for Gmail
-EMAIL_FROM=noreply@yourdomain.com
-```
-
-**Gmail Setup:**
-1. Enable 2-Step Verification in your Google Account
-2. Generate an App Password: Google Account → Security → App Passwords
-3. Use the 16-character app password (not your regular password)
-
-**Other Providers:**
-- **SendGrid**: `smtp.sendgrid.net`, port 587
-- **AWS SES**: Use AWS credentials and SES SMTP settings
-- **Mailgun**: Use Mailgun SMTP settings
-- **Office 365**: `smtp.office365.com`, port 587
-
-**Security Note**: Never commit SMTP credentials to version control. Always use environment variables or a secrets manager.
-
-### Admin User Configuration
-
-A default admin user is automatically created on application startup if it doesn't already exist.
-
-**Environment Variables:**
-```bash
-ADMIN_EMAIL=vtiradoegas@gmail.com    # Admin email address
-ADMIN_USERNAME=vtiradoegas           # Admin username
-ADMIN_PASSWORD=walmart2002!          # Admin password (CHANGE IN PRODUCTION!)
-ADMIN_ENABLED=true                   # Set to false to disable admin creation
-```
-
-**Default Values (Development):**
-- Email: `vtiradoegas@gmail.com`
-- Username: `vtiradoegas`
-- Password: `walmart2002!`
-- Enabled: `true`
-
-**Production Security:**
-- **IMPORTANT**: Change the default admin password in production!
-- Set `ADMIN_PASSWORD` environment variable to a strong password
-- Consider disabling admin creation (`ADMIN_ENABLED=false`) after initial setup
-- Use environment variables or secrets manager, never hardcode credentials
-
-### Environment Variables Reference
-
-#### Backend
-
-| Variable | Default | Description |
-|----------|---------|-------------|
-| `SERVER_PORT` | 8080 | Server port |
-| `DATABASE_URL` | jdbc:postgresql://localhost:5432/invdb | Database connection URL |
-| `DATABASE_USERNAME` | invuser | Database username |
-| `DATABASE_PASSWORD` | invpass | Database password |
-| `DDL_AUTO` | update | Hibernate DDL mode (use `validate` in prod) |
-| `FLYWAY_ENABLED` | true | Enable Flyway migrations |
-| `CORS_ALLOWED_ORIGINS` | http://localhost:* | CORS allowed origins |
-| `CSRF_ENABLED` | false | Enable CSRF protection |
-| `SWAGGER_ENABLED` | true | Enable Swagger UI |
-| `LOG_LEVEL` | INFO | Logging level |
-| `LOG_FILE` | logs/inventory-audit-portal.log | Log file path |
-| `JWT_SECRET` | defaultSecretKey... | JWT secret key (CHANGE IN PRODUCTION!) |
-| `JWT_EXPIRATION` | 86400000 | JWT expiration in milliseconds (24 hours) |
-| `EMAIL_ENABLED` | false | Enable email functionality |
-| `SMTP_HOST` | smtp.gmail.com | SMTP server host |
-| `SMTP_PORT` | 587 | SMTP server port |
-| `SMTP_USERNAME` | | SMTP username |
-| `SMTP_PASSWORD` | | SMTP password |
-| `EMAIL_FROM` | noreply@inventory-audit-portal.com | From email address |
-
-#### Frontend
-
-| Variable | Default | Description |
-|----------|---------|-------------|
-| `VITE_API_BASE_URL` | /api | API base URL |
-
-### Troubleshooting
-
-#### Database Connection Issues
-
-- Verify database is running and accessible
-- Check connection string format
-- Verify credentials
-- Check firewall rules
-
-#### CORS Errors
-
-- Verify `CORS_ALLOWED_ORIGINS` includes your frontend domain
-- Check browser console for specific CORS errors
-- Ensure credentials are handled correctly
-
-#### Migration Issues
-
-- Check Flyway logs for migration errors
-- Verify database user has CREATE/ALTER permissions
-- Review migration files for syntax errors
-
-#### Health Check Failures
-
-- Verify database connectivity
-- Check application logs
-- Verify actuator endpoints are accessible
 
 ## Project Structure
 
@@ -837,7 +289,7 @@ inventory-audit-portal/
 │   │   │   └── resources/
 │   │   │       ├── db/migration/       # Flyway migrations
 │   │   │       └── application.yaml    # Application configuration
-│   │   └── test/         # Tests
+│   │   └── test/         # Unit tests
 │   ├── Dockerfile
 │   └── pom.xml
 ├── frontend/             # React application
@@ -848,11 +300,56 @@ inventory-audit-portal/
 │   │   └── App.jsx
 │   ├── Dockerfile
 │   └── package.json
+├── tests/                # Comprehensive test suites
+│   ├── test-comprehensive.sh    # Main comprehensive test suite
+│   ├── test-backend.sh           # Backend API tests with edge cases
+│   ├── test-frontend.sh          # Frontend tests with edge cases
+│   ├── test-database.sh          # Database functionality tests
+│   ├── logs/                     # Test execution logs
+│   └── README.md                 # Test suite documentation
 ├── db/                   # Database setup
 │   └── docker-compose.yaml
+├── docs/                  # Documentation
+│   ├── API.md           # API documentation
+│   ├── DEPLOYMENT.md    # Deployment guide
+│   └── DEVELOPMENT.md   # Development setup
 ├── docker-compose.prod.yaml  # Production Docker Compose
-└── README.md
+├── .env.example         # Environment variables template (copy to .env)
+├── SECURITY.md          # Security documentation
+└── README.md            # This file
 ```
+
+## Testing
+
+The project includes comprehensive test scripts in the `tests/` directory:
+
+- **[tests/test-comprehensive.sh](tests/test-comprehensive.sh)** - Main comprehensive test suite covering API endpoints, Docker builds, frontend builds, authentication, role-based permissions, CRUD operations, audit events, security, and integration tests
+- **[tests/test-backend.sh](tests/test-backend.sh)** - Backend API test suite with extensive edge cases including input validation, pagination, CRUD operations, search/filter, security, audit events, performance, and content-type handling
+- **[tests/test-frontend.sh](tests/test-frontend.sh)** - Frontend test suite covering build verification, accessibility, routes, API integration, assets, performance, security, browser compatibility, and error handling
+- **[tests/test-database.sh](tests/test-database.sh)** - Database functionality tests covering schema validation, constraints, indexes, data integrity, CRUD operations, referential integrity, performance, migrations, and edge cases
+
+### Running Tests
+
+```bash
+# Run all comprehensive tests
+cd tests
+./test-comprehensive.sh
+
+# Run specific test suites
+./test-backend.sh      # Backend API tests
+./test-frontend.sh     # Frontend tests
+./test-database.sh     # Database tests
+```
+
+All test scripts generate detailed logs in `tests/logs/` with timestamps. See **[tests/README.md](tests/README.md)** for detailed documentation on each test script.
+
+## Documentation
+
+- **[SECURITY.md](SECURITY.md)** - Security configuration, credentials, and best practices
+- **[docs/API.md](docs/API.md)** - Complete API endpoint documentation
+- **[docs/DEPLOYMENT.md](docs/DEPLOYMENT.md)** - Production deployment guide
+- **[docs/DEVELOPMENT.md](docs/DEVELOPMENT.md)** - Development setup and troubleshooting
+- **[tests/README.md](tests/README.md)** - Test suite documentation and usage guide
 
 ## Error Handling
 
@@ -874,165 +371,6 @@ The application uses a global exception handler that returns standardized error 
 - `UnauthorizedException`: 401 Unauthorized - Authentication required
 - `ForbiddenException`: 403 Forbidden - Insufficient permissions
 - `MethodArgumentNotValidException`: 400 Bad Request - Validation errors
-
-## Security
-
-Current implementation includes:
-- JWT-based authentication
-- Role-based access control (ADMIN, USER roles)
-- Password encryption (BCrypt)
-- CORS configuration
-- Input validation
-
-For production deployment:
-1. Use strong JWT secrets (change default)
-2. Enable HTTPS
-3. Implement rate limiting
-4. Add request validation and sanitization
-5. Configure CORS appropriately for production domains
-6. Review and restrict actuator endpoints
-7. Set up proper logging and monitoring
-
-## Troubleshooting
-
-### Port Already in Use
-
-If you get an error like "port is already allocated" or "address already in use":
-
-**Solution 1: Stop conflicting services**
-```bash
-# Check what's using the port
-# On Linux/Mac:
-lsof -i :8080  # or :5432, :3000
-
-# On Windows:
-netstat -ano | findstr :8080
-
-# Stop the conflicting container/service
-docker ps
-docker stop <container-id>
-```
-
-**Solution 2: Use different ports**
-Create a `.env` file in the project root:
-```bash
-DB_PORT=5433
-BACKEND_PORT=8081
-FRONTEND_PORT=3001
-```
-
-### Docker Compose Version Issues
-
-If you see errors about unsupported features:
-
-**Check your Docker Compose version:**
-```bash
-docker compose version
-# Should be v2.0.0 or higher
-```
-
-**Update Docker Desktop** or install Docker Compose v2:
-- Docker Desktop includes Docker Compose v2 automatically
-- For Linux: Follow [Docker Compose installation guide](https://docs.docker.com/compose/install/)
-
-### Permission Denied (Port 80/443)
-
-If you get permission errors binding to port 80 or 443:
-
-**Solution:** The default frontend port is now 3000 (no root required). If you need port 80:
-- **Linux:** Run with `sudo` (not recommended for development)
-- **macOS:** May require admin privileges
-- **Windows:** Usually works without admin
-
-### Container Won't Start / Health Check Fails
-
-**Check container logs:**
-```bash
-# All services
-docker-compose -f docker-compose.prod.yaml logs
-
-# Specific service
-docker logs inventory-backend
-docker logs inventory-frontend
-docker logs inventory-db
-```
-
-**Common issues:**
-- Database not ready: Wait 30-60 seconds for database to become healthy
-- Out of memory: Close other applications, ensure Docker has enough resources allocated
-- Network issues: Restart Docker daemon
-
-### Build Fails
-
-**Clean rebuild:**
-```bash
-docker-compose -f docker-compose.prod.yaml down
-docker-compose -f docker-compose.prod.yaml build --no-cache
-docker-compose -f docker-compose.prod.yaml up -d
-```
-
-**Check disk space:**
-```bash
-docker system df
-# If low on space:
-docker system prune -a  # Removes unused images, containers, networks
-```
-
-### Database Connection Errors
-
-**Verify database is running:**
-```bash
-docker ps | grep inventory-db
-# Should show "healthy" status
-```
-
-**Test connection:**
-```bash
-docker exec inventory-db pg_isready -U invuser
-```
-
-**Reset database (WARNING: deletes all data):**
-```bash
-docker-compose -f docker-compose.prod.yaml down -v
-docker-compose -f docker-compose.prod.yaml up -d
-```
-
-### Frontend Can't Connect to Backend
-
-**Check CORS configuration:**
-- Ensure `CORS_ALLOWED_ORIGINS` includes your frontend URL
-- Default: `http://localhost:3000` (matches default frontend port)
-
-**Verify backend is accessible:**
-```bash
-curl http://localhost:8080/actuator/health
-# Should return JSON response
-```
-
-### Platform-Specific Issues
-
-**ARM64 (Apple Silicon M1/M2/M3):**
-- Docker images are built for multi-platform support
-- If issues occur, rebuild: `docker-compose -f docker-compose.prod.yaml build --no-cache`
-
-**Windows:**
-- Use WSL2 for best compatibility
-- Ensure line endings are correct (Git should handle this)
-
-**Linux:**
-- Ensure Docker daemon is running: `sudo systemctl status docker`
-- User must be in `docker` group: `sudo usermod -aG docker $USER` (then logout/login)
-
-### Still Having Issues?
-
-1. **Check Docker Desktop/Engine is running**
-2. **Verify minimum requirements:**
-   - Docker Desktop 4.0+ or Docker Engine 20.10+
-   - Docker Compose v2.0+
-   - At least 4GB free RAM
-   - At least 5GB free disk space
-3. **Review logs** for specific error messages
-4. **Try manual setup** (see Development Setup section) to isolate Docker issues
 
 ## Future Enhancements
 

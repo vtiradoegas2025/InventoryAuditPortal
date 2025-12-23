@@ -3,9 +3,9 @@ services:
     image: postgres:16
     container_name: inv_pg
     environment:
-      POSTGRES_DB: invdb
-      POSTGRES_USER: invuser
-      POSTGRES_PASSWORD: invpass
+      POSTGRES_DB: ${DATABASE_NAME:-invdb}
+      POSTGRES_USER: ${DATABASE_USERNAME:-invuser}
+      POSTGRES_PASSWORD: ${DATABASE_PASSWORD:-demo_password_change_in_production}
     ports:
       - "5432:5432"
     volumes:

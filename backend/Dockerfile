@@ -19,6 +19,11 @@ RUN apt-get update && apt-get install -y --no-install-recommends wget && rm -rf 
 
 # Create non-root user
 RUN groupadd -r spring && useradd -r -g spring spring
+
+# Create log directory and set ownership before switching to non-root user
+RUN mkdir -p /var/log/inventory-audit-portal && \
+    chown -R spring:spring /var/log/inventory-audit-portal
+
 USER spring:spring
 
 # Copy jar from build stage

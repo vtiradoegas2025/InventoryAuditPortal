@@ -32,13 +32,16 @@ public class DefaultAdminInitializer implements CommandLineRunner
     @Autowired
     private PasswordEncoder passwordEncoder;
     
-    @Value("${app.admin.email:vtiradoegas@gmail.com}")
+    @Value("${app.demo-mode:false}")
+    private boolean demoMode;
+    
+    @Value("${app.admin.email:admin@example.com}")
     private String adminEmail;
     
-    @Value("${app.admin.username:vtiradoegas}")
+    @Value("${app.admin.username:admin}")
     private String adminUsername;
     
-    @Value("${app.admin.password:walmart2002!}")
+    @Value("${app.admin.password:admin123!}")
     private String adminPassword;
     
     @Value("${app.admin.enabled:true}")
@@ -47,10 +50,17 @@ public class DefaultAdminInitializer implements CommandLineRunner
     @Override
     public void run(String... args) throws Exception 
     {
-        // Check if admin creation is enabled
-        if (!adminEnabled) 
+        // Check if demo mode is enabled and admin creation is enabled
+        if (!demoMode || !adminEnabled) 
         {
-            System.out.println("Admin user creation is disabled (app.admin.enabled=false)");
+            if (!demoMode) 
+            {
+                System.out.println("Admin user creation is disabled (app.demo-mode=false). Set DEMO_MODE=true to enable.");
+            } 
+            else 
+            {
+                System.out.println("Admin user creation is disabled (app.admin.enabled=false)");
+            }
             return;
         }
         

@@ -33,3 +33,4 @@ CREATE INDEX IF NOT EXISTS idx_user_roles_role_id ON user_roles(role_id);
 -- Insert default roles
 INSERT INTO roles (name) VALUES ('USER'), ('MANAGER'), ('ADMIN') ON CONFLICT (name) DO NOTHING;
 
+

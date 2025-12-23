@@ -22,6 +22,8 @@ Thumbs.db
 # Logs
 *.log
 logs/
+**/logs/
+test-results-*.log
 
 # Environment files
 .env
@@ -41,3 +43,8 @@ node_modules/
 **/*.spec.js
 **/*.spec.ts
 
+# Test results and coverage
+coverage/
+.nyc_output/
+*.lcov
+test-results-*.log

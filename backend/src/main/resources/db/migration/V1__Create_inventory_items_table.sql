@@ -14,3 +14,4 @@ CREATE INDEX IF NOT EXISTS idx_location ON inventory_items(location);
 CREATE INDEX IF NOT EXISTS idx_updated_at ON inventory_items(updated_at);
 CREATE INDEX IF NOT EXISTS idx_location_updated ON inventory_items(location, updated_at);
 
+
